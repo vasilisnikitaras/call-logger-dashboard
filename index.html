@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    : root {
+    :root {
       --bg-light: #f0f2f5;
       --text-light: #333;
       --bg-dark: #121212;
@@ -48,7 +48,7 @@
       border: none;
       cursor: pointer;
     }
-    button: hover {
+    button:hover {
       background: #005ea8;
     }
     #topBtn {
@@ -100,8 +100,6 @@
       button, input, textarea, select { width: 100%; }
     }
   </style>
-
-  </style>
   
   <style>
     #topBtn {
@@ -117,16 +115,17 @@
   top: 10px;
   right: 10px;
 }
-  </style>
 
+  </style>
+  
 <style>
   h1#title {
   font-size: 22px;
   margin-top: 40px;
 }
-</style>
-
-   <style>
+</style>  
+  
+  <style>
     #themeToggle {
   top: 10px;
   right: 10px;
@@ -147,13 +146,19 @@
   color: white;
 }
   </style>
-  <style>
-    #themeToggle: hover {
+  
+   <style>
+    #themeToggle:hover {
   background-color: #005ea8;
 }
   </style>
-<style>
-#title {
+  
+  <style>
+    
+  </style>
+  
+  <style>
+    #title {
   background-color: var(--accent);
   color: white;
   padding: 6px 12px;
@@ -167,9 +172,8 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
   </style>
-
-
-<style>
+  
+  <style>
   @media (max-width: 600px) {
   #title {
     font-size: 18px;
@@ -179,9 +183,8 @@
   }
 }
 </style>
-
-
-<style>
+  
+  <style>
     #title {
   background-color: var(--accent);
   color: white;
@@ -208,7 +211,7 @@
 }
   </style>
   
-  
+
 </head>
 <body>
   <body class="dark">
@@ -414,8 +417,7 @@
   renderTable();
   renderComments();
 </script>
-
-    <script>
+      <script>
       function exportCSV() {
   if (calls.length === 0) return alert("Δεν υπάρχουν κλήσεις για εξαγωγή!");
   const header = ["Caller", "Duration", "Type", "Issue", "Date"];
@@ -440,7 +442,5 @@
   document.body.removeChild(link);
 }
     </script>
-
-    
 </body>
 </html>
