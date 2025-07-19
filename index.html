@@ -101,7 +101,8 @@
     }
   </style>
 </head>
-<body class="dark">
+
+  <body class="dark">
   <button id="themeToggle">🌙</button>
   <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" id="topBtn">↑ Top</button>
 
@@ -127,7 +128,13 @@
     <input type="text" id="search" placeholder="Αναζήτηση κλήσης...">
     <table id="callTable">
       <thead>
-        <tr><th>Caller</th><th>Duration</th><th>Type</th><th>Issue</th><th>Date</th></tr>
+        <tr>
+          <th>Caller</th>
+          <th>Duration</th>
+          <th>Type</th>
+          <th>Issue</th>
+          <th>Date</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -142,76 +149,161 @@
 
     <footer>© Vasilis Nikitaras & Copilot – All rights reserved</footer>
   </div>
+<script>
+  const calls = JSON.parse(localStorage.getItem("calls") || "[]");
+  const comments = JSON.parse(localStorage.getItem("comments") || "[]");
 
-  <script>
-    const calls = JSON.parse(localStorage.getItem("calls") || "[]");
-    const comments = JSON.parse(localStorage.getItem("comments") || "[]");
+  function updateDateTime() {
+    const now = new Date();
+    const options = {
+      weekday: 'long', day: 'numeric', month: 'long',
+      year: 'numeric', hour: '2-digit', minute: '2-digit'
+    };
+    document.getElementById("datetime").innerText =
+      now.toLocaleDateString("el-GR", options);
+  }
+  setInterval(updateDateTime, 60000); updateDateTime();
 
-    function updateDateTime() {
-      const now = new Date();
-      const options = {
-        weekday: 'long', day: 'numeric', month: 'long',
-        year: 'numeric', hour: '2-digit', minute: '2-digit'
-      };
-      document.getElementById("datetime").innerText =
-        now.toLocaleDateString("el-GR", options);
+  function renderTable() {
+    const tbody = document.querySelector("#callTable tbody");
+    const searchVal = document.getElementById("search").value.toLowerCase();
+    tbody.innerHTML = "";
+    calls.filter(c => c.caller.toLowerCase().includes(searchVal)).forEach(c => {
+      let row = document.createElement("tr");
+      row.innerHTML = `<td>${c.caller}</td><td>${c.duration}m</td><td>${c.type}</td><td>${c.issue}</td><td>${c.timestamp}</td>`;
+      tbody.appendChild(row);
+    });
+    drawChart();
+  }
+
+  function addCall() {
+    const caller = document.getElementById("caller").value;
+    const duration = document.getElementById("duration").value;
+    const type = document.getElementById("type").value;
+    const issue = document.getElementById("issue").value;
+    const timestamp = new Date().toLocaleString("el-GR");
+    if (!caller || !duration) return alert("Συμπληρώστε όλα τα πεδία!");
+    calls.push({ caller, duration, type, issue, timestamp });
+    localStorage.setItem("calls", JSON.stringify(calls));
+    renderTable();
+    document.getElementById("caller").value = "";
+    document.getElementById("duration").value = "";
+    document.getElementById("issue").value = "";
+  }
+
+  function exportCSV() {
+    let csv = "Caller,Duration,Type,Issue,Date\n" +
+      calls.map(c => `${c.caller},${c.duration},${c.type},${c.issue},${c.timestamp}`).join("\n");
+    let blob = new Blob([csv], { type: "text/csv" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "calls.csv";
+    link.click();
+  }
+
+  function drawChart() {
+    let types = {};
+    calls.forEach(c => types[c.type] = (types[c.type] || 0) + 1);
+    const ctx = document.getElementById("chart").getContext("2d");
+    if (window.callChart) window.callChart.destroy();
+    window.callChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: Object.keys(types),
+        datasets: [{
+          data: Object.values(types),
+          backgroundColor: ["#0078d7", "#00b294", "#ff6f00", "#d83b01"]
+        }]
+      }
+    });
+  }
+
+  function addComment() {
+    const text = document.getElementById("commentInput").value.trim();
+    if (!text) return;
+    const timestamp = new Date().toLocaleString("el-GR");
+    comments.push({ text, timestamp });
+    localStorage.setItem("comments", JSON.stringify(comments));
+    renderComments();
+    document.getElementById("commentInput").value = "";
+  }
+
+  function renderComments() {
+    const section = document.getElementById("commentSection");
+    section.innerHTML = comments.map(c => `<p><strong>[${c.timestamp}]</strong> ${c.text}</p>`).join("");
+  }
+
+  // Theme toggle
+  const themeBtn = document.getElementById("themeToggle");
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  document.body.classList.add(savedTheme);
+  themeBtn.innerText = savedTheme === "light" ? "☀️" : "🌙";
+  themeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light");
+    document.body.classList.toggle("dark");
+    const current = document.body.classList.contains("light") ? "light" : "dark";
+    themeBtn.innerText = current === "light" ? "☀️" : "🌙";
+    localStorage.setItem("theme", current);
+  });
+
+  // Language switch
+  const labels = {
+    el: {
+      caller: "Όνομα ή αριθμός κλήσης",
+      duration: "Διάρκεια (λεπτά)",
+      type1: "Εισερχόμενη",
+      type2: "Εξερχόμενη",
+      log: "Καταγραφή Κλήσης",
+      search: "Αναζήτηση κλήσης...",
+      export: "Export σε CSV",
+      issue: "Περιγραφή προβλήματος...",
+      title: "Call Logger Dashboard",
+      comment: "Προσθήκη σχολίου"
+    },
+    en: {
+      caller: "Caller name or number",
+      duration: "Duration (minutes)",
+      type1: "Incoming",
+      type2: "Outgoing",
+      log: "Log Call",
+      search: "Search calls...",
+      export: "Export to CSV",
+      issue: "Issue Description",
+      title: "Call Logger Dashboard",
+      comment: "Add comment"
+    },
+    fr: {
+      caller: "Nom ou numéro d'appel",
+      duration: "Durée (minutes)",
+      type1: "Entrant",
+      type2: "Sortant",
+      log: "Enregistrer l'appel",
+      search: "Recherche d'appels...",
+      export: "Exporter vers CSV",
+      issue: "Description du problème...",
+      title: "Tableau des appels",
+      comment: "Ajouter un commentaire"
     }
-    setInterval(updateDateTime, 60000); updateDateTime();
+  };
 
-    function renderTable() {
-      const tbody = document.querySelector("#callTable tbody");
-      const searchVal = document.getElementById("search").value.toLowerCase();
-      tbody.innerHTML = "";
-      calls.filter(c => c.caller.toLowerCase().includes(searchVal)).forEach(c => {
-        let row = document.createElement("tr");
-        row.innerHTML = `<td>${c.caller}</td><td>${c.duration}m</td><td>${c.type}</td><td>${c.issue}</td><td>${c.timestamp}</td>`;
-        tbody.appendChild(row);
-      });
-      drawChart();
-    }
+  document.getElementById("language").addEventListener("change", e => {
+    const lang = e.target.value;
+    const l = labels[lang];
+    document.getElementById("caller").placeholder = l.caller;
+    document.getElementById("duration").placeholder = l.duration;
+    document.getElementById("type").options[0].text = l.type1;
+    document.getElementById("type").options[1].text = l.type2;
+    document.querySelector("button").innerText = l.log;
+    document.getElementById("search").placeholder = l.search;
+    document.querySelectorAll("button")[1].innerText = l.export;
+    document.getElementById("issue").placeholder = l.issue;
+    document.getElementById("title").innerText = l.title;
+    document.querySelectorAll("button")[2].innerText = l.comment;
+  });
 
-    function addCall() {
-      const caller = document.getElementById("caller").value;
-      const duration = document.getElementById("duration").value;
-      const type = document.getElementById("type").value;
-      const issue = document.getElementById("issue").value;
-      const timestamp = new Date().toLocaleString("el-GR");
-      if (!caller || !duration) return alert("Συμπληρώστε όλα τα πεδία!");
-      calls.push({ caller, duration, type, issue, timestamp });
-      localStorage.setItem("calls", JSON.stringify(calls));
-      renderTable();
-      document.getElementById("caller").value = "";
-      document.getElementById("duration").value = "";
-      document.getElementById("issue").value = "";
-    }
-
-    function exportCSV() {
-      let csv = "Caller,Duration,Type,Issue,Date\n" +
-        calls.map(c => `${c.caller},${c.duration},${c.type},${c.issue},${c.timestamp}`).join("\n");
-      let blob = new Blob([csv], { type: "text/csv" });
-      let link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "calls.csv";
-      link.click();
-    }
-
-    function drawChart() {
-      let types = {};
-      calls.forEach(c => types[c.type] = (types[c.type] || 0) + 1);
-      const ctx = document.getElementById("chart").getContext("2d");
-      if (window.callChart) window.callChart.destroy();
-      window.callChart = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: Object.keys(types),
-          datasets: [{ data: Object.values(types),
-            backgroundColor: ["#0078d7", "#00b294", "#ff6f00", "#d83b01"]
-          }]
-        }
-      });
-    }
-
-    function addComment() {
-      const text = document.getElementById("commentInput").value.trim();
-      if (!text) return;
-      const timestamp = new Date().toLocaleString("el-GR
+  document.getElementById("search").addEventListener("input", renderTable);
+  renderTable();
+  renderComments();
+</script>
+</body>
+</html>
