@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <div id="datetime"></div>
+<h1 id="title">Call Logger Dashboard</h1>
+  <title>Call Logger Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-light: #f0f2f5;
+      --text-light: #333;
+      --bg-dark: #121212;
+      --text-dark: #fff;
+      --accent: #0078d7;
+    }
+
+    body.light {
+      background: var(--bg-light);
+      color: var(--text-light);
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 20px;
+      scroll-behavior: smooth;
+      transition: all 0.3s ease;
+    }
+
+    h1, h2 {
+      text-align: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: inherit;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #999;
+    }
+
+    input, select {
+      width: 100%; padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background: inherit;
+      color: inherit;
+    }
+
+    button {
+      padding: 10px;
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #005ea8;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #aaa;
+    }
+
+    th {
+      background: var(--accent);
+      color: white;
+    }
+
+    #topBtn {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      background: var(--accent); color: white;
+      border: none; padding: 10px 15px;
+      border-radius: 50px; cursor: pointer;
+      font-size: 14px;
+    }
+
+    #themeToggle {
+      position: fixed;
+      top: 20px; right: 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
+<style>
+footer {
+  text-align: center;
+  font-size: 0.8em;
+  color: #555;
+  margin-top: 40px;
+  padding: 10px 0;
+  background-color: #f2f2f2;
+}
+  </style>
+  
+  <style>
+  #datetime {
+  text-align: center;
+  font-size: 0.9em;
+  color: #ccc;
+  background-color: transparent;
+  margin-bottom: 10px;
+  padding-top: 20px;
+}
+  </style>
+  
+</head>
+<body>
+<body class="dark">
+  <button id="themeToggle">🌙</button>
+  <a name="top"></a>
+  <div class="container">
+    <select id="language">
+      <option value="el">Ελληνικά 🇬🇷</option>
+      <option value="en">English 🇬🇧</option>
+      <option value="fr">Français 🇫🇷</option>
+    </select>
+
+    <input type="text" id="caller" placeholder="Όνομα ή αριθμός κλήσης">
+    <input type="number" id="duration" placeholder="Διάρκεια (λεπτά)">
+    <select id="type">
+      <option value="Εισερχόμενη">Εισερχόμενη</option>
+      <option value="Εξερχόμενη">Εξερχόμενη</option>
+    </select>
+    <button onclick="addCall()">Καταγραφή Κλήσης</button>
+
+    <input type="text" id="search" placeholder="Αναζήτηση κλήσης...">
+    <table id="callTable">
+      <thead>
+        <tr><th>Caller</th><th>Duration</th><th>Type</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="exportCSV()">Export σε CSV</button>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <button onclick="document.location.href='#top'" id="topBtn">↑ Top</button>
+
+  <footer>
+    © Vasilis Nikitaras & Copilot – All rights reserved
+  </footer>
+
+
+  <!-- ⚙️ JavaScript – Μέρος 2 θα ακολουθήσει ➡️ -->
+  
+  <script>
+  let calls = JSON.parse(localStorage.getItem("calls") || "[]");
+
+  function renderTable() {
+    const tbody = document.querySelector("#callTable tbody");
+    tbody.innerHTML = "";
+    const searchVal = document.getElementById('search').value.toLowerCase();
+    calls.filter(c => c.caller.toLowerCase().includes(searchVal)).forEach(c => {
+      let row = document.createElement("tr");
+      row.innerHTML = `<td>${c.caller}</td><td>${c.duration} min</td><td>${c.type}</td>`;
+      tbody.appendChild(row);
+    });
+    drawChart();
+  }
+
+  function addCall() {
+    const caller = document.getElementById("caller").value;
+    const duration = document.getElementById("duration").value;
+    const type = document.getElementById("type").value;
+    if (!caller || !duration) return alert("Fill all fields!");
+    calls.push({ caller, duration, type });
+    localStorage.setItem("calls", JSON.stringify(calls));
+    renderTable();
+    document.getElementById("caller").value = "";
+    document.getElementById("duration").value = "";
+  }
+
+  function exportCSV() {
+    let csv = "Caller,Duration,Type\n" + calls.map(c => `${c.caller},${c.duration},${c.type}`).join("\n");
+    let blob = new Blob([csv], { type: "text/csv" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "calls.csv";
+    link.click();
+  }
+
+  function drawChart() {
+    let types = {};
+    calls.forEach(c => {
+      types[c.type] = (types[c.type] || 0) + 1;
+    });
+
+    const ctx = document.getElementById("chart").getContext("2d");
+    if (window.callChart) window.callChart.destroy();
+    window.callChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: Object.keys(types),
+        datasets: [{
+          data: Object.values(types),
+          backgroundColor: ["#0078d7", "#00b294", "#ff6f00", "#d83b01", "#6b69d6", "#e81123"]
+        }]
+      }
+    });
+  }
+
+  // Theme Toggle
+  const themeBtn = document.getElementById("themeToggle");
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  document.body.classList.add(savedTheme);
+  themeBtn.innerText = savedTheme === "light" ? "☀️" : "🌙";
+
+  themeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light");
+    document.body.classList.toggle("dark");
+    const current = document.body.classList.contains("light") ? "light" : "dark";
+    themeBtn.innerText = current === "light" ? "☀️" : "🌙";
+    localStorage.setItem("theme", current);
+  });
+
+  // Language Switch
+  document.getElementById("language").addEventListener("change", e => {
+    const lang = e.target.value;
+    const labels = {
+      en: {
+        caller: "Caller name or number",
+        duration: "Duration (minutes)",
+        type1: "Incoming",
+        type2: "Outgoing",
+        log: "Log Call",
+        search: "Search calls...",
+        export: "Export to CSV",
+        title: "Call Logger Dashboard"
+      },
+      el: {
+        caller: "Όνομα ή αριθμός κλήσης",
+        duration: "Διάρκεια (λεπτά)",
+        type1: "Εισερχόμενη",
+        type2: "Εξερχόμενη",
+        log: "Καταγραφή Κλήσης",
+        search: "Αναζήτηση κλήσης...",
+        export: "Export σε CSV",
+        title: "Call Logger Dashboard"
+      },
+      fr: {
+        caller: "Nom ou numéro d'appel",
+        duration: "Durée (minutes)",
+        type1: "Entrant",
+        type2: "Sortant",
+        log: "Enregistrer l'appel",
+        search: "Recherche d'appels...",
+        export: "Exporter vers CSV",
+        title: "Tableau des appels"
+      }
+    };
+    const l = labels[lang];
+    document.getElementById("caller").placeholder = l.caller;
+    document.getElementById("duration").placeholder = l.duration;
+    document.getElementById("type").options[0].text = l.type1;
+    document.getElementById("type").options[1].text = l.type2;
+    document.querySelector("button").innerText = l.log;
+    document.getElementById("search").placeholder = l.search;
+    document.querySelectorAll("button")[1].innerText = l.export;
+    document.getElementById("title").innerText = l.title;
+  });
+
+  document.getElementById("search").addEventListener("input", renderTable);
+  renderTable();
+</script>
+  
+  <script>
+    // Language labels
+    const labels = {
+      en: {
+        caller: "Caller name or number",
+        duration: "Duration (minutes)",
+        type1: "Incoming",
+        type2: "Outgoing",
+        log: "Log Call",
+        search: "Search calls...",
+        export: "Export to CSV",
+        title: "Call Logger Dashboard"
+      },
+      el: {
+        caller: "Όνομα ή αριθμός κλήσης",
+        duration: "Διάρκεια (λεπτά)",
+        type1: "Εισερχόμενη",
+        type2: "Εξερχόμενη",
+        log: "Καταγραφή Κλήσης",
+        search: "Αναζήτηση κλήσης...",
+        export: "Export σε CSV",
+        title: "Call Logger Dashboard"
+      },
+      fr: {
+        caller: "Nom ou numéro d'appel",
+        duration: "Durée (minutes)",
+        type1: "Entrant",
+        type2: "Sortant",
+        log: "Enregistrer l'appel",
+        search: "Recherche d'appels...",
+        export: "Exporter vers CSV",
+        title: "Tableau des appels"
+      }
+    };
+
+    // Switch language
+    document.getElementById("language").addEventListener("change", e => {
+      const lang = e.target.value;
+      const l = labels[lang];
+      document.getElementById("caller").placeholder = l.caller;
+      document.getElementById("duration").placeholder = l.duration;
+      document.getElementById("type").options[0].text = l.type1;
+      document.getElementById("type").options[1].text = l.type2;
+      document.querySelector("button").innerText = l.log;
+      document.getElementById("search").placeholder = l.search;
+      document.querySelectorAll("button")[1].innerText = l.export;
+      document.getElementById("title").innerText = l.title;
+    });
+
+    // Search filter
+    document.getElementById("search").addEventListener("input", renderTable);
+
+    // Date & time
+    function updateDateTime() {
+      const now = new Date();
+      const options = {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      document.getElementById('datetime').innerText =
+        now.toLocaleDateString('el-GR', options);
+    }
+    setInterval(updateDateTime, 60000); // Update every minute
+    updateDateTime(); // Initial display
+
+    // Initial render
+    renderTable();
+  </script>
+
+</body>
+</html>
